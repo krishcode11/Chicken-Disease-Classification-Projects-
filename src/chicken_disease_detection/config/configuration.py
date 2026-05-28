@@ -1,13 +1,18 @@
-from chicken_disease_detection.constants import *
-from chicken_disease_detection.utils.common import read_yaml, create_directories
-from chicken_disease_detection.entity.config_entity import DataIngestionConfig
+from pathlib import Path
 
+from chicken_disease_detection.utils.common import read_yaml, create_directories
+from chicken_disease_detection.entity.config_entity import DataIngestionConfig, PrepareBaseModelConfig
+from chicken_disease_detection.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH
 
 
 class ConfigurationManager:
-    def __init__(self,
-                 config_filepath = CONFIG_FILE_PATH,
-                 params_filepath = PARAMS_FILE_PATH):
+    def __init__(self, config_filepath: Path = None, params_filepath: Path = None):
+        # Resolve default paths relative to the project root (three levels up from this file)
+        project_root = Path(__file__).resolve().parents[3]
+        if config_filepath is None:
+            config_filepath = project_root / "config" / "config.yaml"
+        if params_filepath is None:
+            params_filepath = project_root / "params.yaml"
         self.config = read_yaml(config_filepath)
         self.params = read_yaml(params_filepath)
 
@@ -26,3 +31,30 @@ class ConfigurationManager:
         )
 
         return data_ingestion_config
+    
+
+
+
+
+    def get_prepare_base_model_config(self) -> PrepareBaseModelConfig:
+        config = self.config.prepare_base_model
+        
+        create_directories([config.root_dir])
+
+        prepare_base_model_config = PrepareBaseModelConfig(
+            root_dir=Path(config.root_dir),
+            base_model_path=Path(config.base_model_path),
+            updated_base_model_path=Path(config.updated_base_model_path),
+            params_image_size=self.params.IMAGE_SIZE,
+            params_learning_rate=self.params.LEARNING_RATE,
+            params_include_top=self.params.INCLUDE_TOP,
+            params_weights=self.params.WEIGHTS,
+            params_classes=self.params.CLASSES
+        )
+
+        return prepare_base_model_config
+
+
+    
+
+    
