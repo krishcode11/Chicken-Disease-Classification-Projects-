@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from chicken_disease_detection.utils.common import read_yaml, create_directories
-from chicken_disease_detection.entity.config_entity import DataIngestionConfig, PrepareBaseModelConfig
+from chicken_disease_detection.entity.config_entity import DataIngestionConfig, PrepareBaseModelConfig, PrepareCallbackConfig, TrainingConfig, EvaluationConfig
 from chicken_disease_detection.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH
 
 
@@ -33,7 +33,15 @@ class ConfigurationManager:
         return data_ingestion_config
     
 
-
+    def get_prepare_callback_config(self) -> PrepareCallbackConfig:
+        config = self.config.prepare_callback
+        # Ensure directories exist
+        create_directories([config.root_dir])
+        return PrepareCallbackConfig(
+            root_dir=Path(config.root_dir),
+            tensorboard_root_log_dir=Path(config.tensorboard_root_log_dir),
+            checkpoint_model_filepath=Path(config.checkpoint_model_filepath)
+        )
 
 
     def get_prepare_base_model_config(self) -> PrepareBaseModelConfig:
@@ -53,6 +61,39 @@ class ConfigurationManager:
         )
 
         return prepare_base_model_config
+
+    def get_training_config(self) -> TrainingConfig:
+        config = self.config.training
+        prepare_base_model = self.config.prepare_base_model
+        params = self.params
+        training_data = config.unzip_dir
+        create_directories([
+            Path(config.root_dir)
+        ])
+
+        training_config = TrainingConfig(
+            root_dir=Path(config.root_dir),
+            trained_model_path=Path(config.trained_model_path),
+            updated_base_model_path=Path(prepare_base_model.updated_base_model_path),
+            training_data=Path(training_data),
+            params_epochs=params.EPOCHS,
+            params_batch_size=params.BATCH_SIZE,
+            params_is_augmentation=params.AUGMENTATION,
+            params_image_size=params.IMAGE_SIZE
+        )
+
+        return training_config
+    
+
+    def get_validation_config(self) -> EvaluationConfig:    
+        eval_config = EvaluationConfig(
+            path_of_model=Path("artifacts/training/model.h5"),
+            training_data=Path("artifacts/data_ingestion/Chicken-fecal-images"),
+            all_params=self.params,
+            params_image_size=self.params.IMAGE_SIZE,
+            params_batch_size=self.params.BATCH_SIZE
+        )
+        return eval_config
 
 
     
